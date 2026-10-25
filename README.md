@@ -136,13 +136,3 @@ Event names: `yecoyz_core:server:playerLoaded`, `:playerUnloaded`, `:jobUpdated`
 `config.lua`: `Framework`, `Inventory` and `Notify` are all `'auto'` by default. There's also the default notification
 title and duration, `BossGrades` (ESX grade names that count as boss, since ESX jobs have no boss flag), the cash item
 used without a framework, and `Debug`.
-
-## Tests
-
-```sh
-node tests/run.cjs [folder with node_modules/fengari]
-```
-
-This syntax-checks every Lua file. It then runs the callback tests (a mocked server and two clients) and the
-framework tests (the real core files against mocked ESX, QBCore, Qbox and standalone). By default it looks for
-fengari in the workspace's `.lucille/state/lua-check`.
