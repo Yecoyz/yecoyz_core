@@ -16,5 +16,8 @@ Config = {
     -- Item used for cash when there is no framework but ox_inventory runs.
     MoneyItem = 'money',
 
+    -- Print a console notice when a yecoyz_* resource has a newer version on yecoyz.com (checked on start).
+    VersionCheck = true,
+
     Debug = false,
 }

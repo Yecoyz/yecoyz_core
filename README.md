@@ -135,4 +135,11 @@ Event names: `yecoyz_core:server:playerLoaded`, `:playerUnloaded`, `:jobUpdated`
 
 `config.lua`: `Framework`, `Inventory` and `Notify` are all `'auto'` by default. There's also the default notification
 title and duration, `BossGrades` (ESX grade names that count as boss, since ESX jobs have no boss flag), the cash item
-used without a framework, and `Debug`.
+used without a framework, `VersionCheck` and `Debug`.
+
+## Update notices
+
+On start, Core asks `https://yecoyz.com/api/version` for the latest version of every running `yecoyz_*` resource and
+prints a console notice for the ones whose fxmanifest `version` is behind. A resource only needs a semver `version`
+in its fxmanifest. Turn it off with `Config.VersionCheck = false`, or skip one resource with
+`yecoyz_version_check 'no'` in its fxmanifest. The URL can be overridden with the `yecoyz_version_url` convar.
