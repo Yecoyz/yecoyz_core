@@ -1,0 +1,62 @@
+/* Yecoyz design tokens. The only place colors, radii, shadows and fonts are defined.
+   Components use var(--token); never hard-code a hex in a component. See DESIGN.md. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+  /* Surfaces, stacked by lightness */
+  --bg: #0e0e10;
+  --panel: #18181b;
+  --panel-2: #202024;
+  --panel-3: #29292f;
+
+  /* Hairlines */
+  --line: #27272a;
+  --line-strong: #3f3f46;
+
+  /* Text */
+  --fg: #f4f4f5;
+  --muted: #a1a1aa;
+  --dim: #71717a;
+
+  /* The one accent: sand */
+  --accent: #e8d9b0;
+  --accent-strong: #f5ecd2;
+  --accent-ink: #18181b;
+  --accent-soft: rgba(232, 217, 176, 0.1);
+  --accent-border: rgba(232, 217, 176, 0.4);
+  --accent-fill: rgba(232, 217, 176, 0.12);
+
+  /* Status (meaning only, never decoration) */
+  --success: #4ade80;
+  --success-border: rgba(74, 222, 128, 0.4);
+  --success-fill: rgba(74, 222, 128, 0.12);
+  --warn: #fb923c;
+  --warn-border: rgba(251, 146, 60, 0.4);
+  --warn-fill: rgba(251, 146, 60, 0.12);
+  --danger: #ef4444;
+  --danger-strong: #dc2626;
+  --danger-border: rgba(239, 68, 68, 0.4);
+  --danger-fill: rgba(239, 68, 68, 0.12);
+
+  /* Charts only: plain sand fails contrast on dark surfaces */
+  --chart: #b98c2e;
+
+  /* Shape */
+  --radius-panel: 8px;
+  --radius-md: 6px;
+  --radius-badge: 4px;
+
+  /* Elevation: floating layers only */
+  --shadow-float: 0 18px 50px rgba(0, 0, 0, 0.55);
+  --backdrop: rgba(0, 0, 0, 0.6);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-fast: 150ms;
+  --t-panel: 200ms;
+  --t-slide: 300ms;
+
+  /* Type */
+  --font-sans: 'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+}

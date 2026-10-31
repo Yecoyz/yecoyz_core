@@ -1,0 +1,124 @@
+/* The root sits exactly on the spot (left/top); the marker, line and card are placed around it. */
+.interact {
+  position: fixed;
+  z-index: 5;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  animation: y-fade var(--t-panel) ease-out both;
+}
+
+.interact-leaving {
+  animation: interact-out var(--t-fast) ease-in both;
+}
+
+@keyframes interact-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.interact-marker {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border: 2px solid var(--accent-ink);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px var(--accent-border), 0 0 14px var(--accent-border);
+}
+
+.interact-line {
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 16px;
+  height: 1px;
+  background: var(--accent-border);
+}
+
+.interact-card {
+  position: absolute;
+  left: 24px;
+  top: 0;
+  min-width: 190px;
+  overflow: hidden;
+  background: rgba(24, 24, 27, 0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-float);
+  transform: translateY(-50%);
+}
+
+.interact-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.interact-flip .interact-line {
+  left: -24px;
+}
+
+.interact-flip .interact-card {
+  left: auto;
+  right: 24px;
+}
+
+.interact-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 6px 6px;
+  list-style: none;
+}
+
+.interact-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  color: var(--dim);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+
+.interact-option.active {
+  background: var(--accent-soft);
+  color: var(--fg);
+}
+
+.interact-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--dim);
+}
+
+.interact-option.active .interact-icon {
+  color: var(--accent);
+}
+
+.interact-label {
+  flex: 1;
+}
+
+.interact-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.interact-count {
+  color: var(--fg);
+}

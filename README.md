@@ -1,7 +1,8 @@
 # yecoyz_core
 
 The shared framework layer and callback system for the yecoyz resources. Each resource used to carry its own bridge;
-now they all load this one, so ESX / QBCore / Qbox / standalone support lives in one place.
+now they all load this one, so ESX / QBCore / Qbox / standalone support lives in one place. It also has the shared
+in-game UI: notifications, interactions (a target-like menu without the target key) and a controls card.
 
 Used by `yecoyz_duty`, `yecoyz_minigames`, `yecoyz_radar`, `yecoyz_characters`, `yecoyz_appearance` and `yecoyz_jukebox`.
 
@@ -116,8 +117,77 @@ Core.Callback.Trigger('yecoyz_radar:getPlate', source, function(plate) end)
 | `GetIdentifier()`, `GetJob()`, `HasJob(jobs, minGrade)` | Same shapes as the server |
 | `GetCharacter()`, `GetName()`, `GetFullName()`, `GetSex()` | `GetSex()`: 0 male / 1 female |
 | `GetMoney(account)`, `GetItemCount(item)`, `HasItem(item, count)` | From the player data or ox_inventory. Do the real checks on the server. |
-| `Notify(message, type, duration, title)` | ox_lib, the framework, or the GTA feed (`Config.Notify`) |
+| `Notify(message, type, duration, title)` | The core's own notification UI by default (`Config.Notify`) |
+| `AddInteraction(data)` / `RemoveInteraction(id)` | See [Interactions](#interactions) |
+| `GetActiveInteraction()` | The menu on screen: `{ index, options = { { name, label } } }`, or nil |
+| `SetInteractionsDisabled(state)` | Hide and pause every interaction, e.g. during a minigame |
+| `IsUIReady()` | The NUI page has loaded (messages sent before that are queued) |
+| `ShowControls(rows, title, id)` / `HideControls(id)` | See [Controls card](#controls-card) |
 | `DisableSpawnManager()` | Turns off spawnmanager's auto spawn |
+
+## Notifications
+
+`Core.Notify(message, type, duration, title)` shows a small toast at the top of the screen with a coloured bar for the
+type (`info`, `success`, `error`, `warning`). From the server it is `Core.Notify(source, message, type, duration, title)`.
+`Config.Notify = 'yecoyz'` is the default; set `'auto'`, `'ox_lib'`, `'framework'` or `'native'` to use something else.
+
+## Interactions
+
+A target system without the target key. Walk up to a prop, a door handle or a spot, and a menu appears on it. If it has
+several options, scroll the mouse wheel to switch between them and press `E` to use the selected one.
+
+```lua
+local id = Core.AddInteraction({
+    id = 'cityhall_door',            -- optional; adding the same id again replaces it
+    coords = vec3(-544.9, -204.4, 38.2),
+    distance = 2.0,                  -- how close the player has to be (default Config.Interact.Distance)
+    options = {
+        { name = 'open', label = 'Open door', icon = 'door-open', onSelect = function(data) end },
+        { name = 'lock', label = 'Lock door', icon = 'lock', jobs = 'police', serverEvent = 'cityhall:lock' },
+        { name = 'knock', label = 'Knock', icon = 'hand', command = 'knock' },
+    },
+})
+Core.RemoveInteraction(id)
+```
+
+Where the menu appears (use one of them):
+
+| Field | Spot |
+|---|---|
+| `coords` | A fixed position |
+| `entity` / `netId` | One entity. `bone = 'door_dside_f'` (or a list, the closest is used) or `offset = vec3(...)` pins the menu to a part of it, like a door handle |
+| `models = { 'prop_atm_01' }` | Every entity of these models |
+| `global = 'vehicle'` | Every `'vehicle'`, `'ped'` (not players), `'player'` or `'object'` (heavy, prefer `models`) |
+
+Per option:
+
+| Field | |
+|---|---|
+| `label` | Required. `name` identifies the option, `icon` is a [lucide](https://lucide.dev/icons) name |
+| `onSelect(data)` | Called with `{ entity, netId, coords, distance, name, id }` |
+| `event` / `serverEvent` / `command` | Alternatives to `onSelect`. `serverEvent` gets the data without `entity` (use `netId`) |
+| `distance` | Shorter range than the registration |
+| `jobs`, `items` | Same forms as `Core.HasJob` / `Core.HasItem` |
+| `canInteract(entity, distance, coords, name)` | Return false to hide the option |
+| `inVehicle` | Also show while the player is in a vehicle (hidden by default) |
+
+The options of one spot are shown together, and when several spots are in range the closest one is shown.
+Registrations are removed when the resource that added them stops. The key, distance and scan rate are in
+`Config.Interact`.
+
+## Controls card
+
+Shows the keys of a mode and what they do, bottom-right. Each resource has its own card and the latest one is shown;
+hiding it brings back the one below.
+
+```lua
+Core.ShowControls({
+    { keys = { 'LMB' }, label = 'Select' },
+    { keys = { 'Shift', 'Scroll' }, label = 'Rotate' },
+    { keys = { 'Del' }, label = 'Delete', dim = true },   -- dim: not available right now
+}, 'Editor')
+Core.HideControls()
+```
 
 ## Events
 
@@ -133,8 +203,8 @@ Event names: `yecoyz_core:server:playerLoaded`, `:playerUnloaded`, `:jobUpdated`
 
 ## Config
 
-`config.lua`: `Framework`, `Inventory` and `Notify` are all `'auto'` by default. There's also the default notification
-title and duration, `BossGrades` (ESX grade names that count as boss, since ESX jobs have no boss flag), the cash item
+`config.lua`: `Framework` and `Inventory` are `'auto'` by default and `Notify` is `'yecoyz'`. There's also the default
+notification title and duration, the `Interact` settings (key, distance, scan rate), `BossGrades` (ESX grade names that count as boss, since ESX jobs have no boss flag), the cash item
 used without a framework, `VersionCheck` and `Debug`.
 
 ## Update notices
@@ -143,3 +213,8 @@ On start, Core asks `https://yecoyz.com/api/version` for the latest version of e
 prints a console notice for the ones whose fxmanifest `version` is behind. A resource only needs a semver `version`
 in its fxmanifest. Turn it off with `Config.VersionCheck = false`, or skip one resource with
 `yecoyz_version_check 'no'` in its fxmanifest. The URL can be overridden with the `yecoyz_version_url` convar.
+
+## UI
+
+The NUI page is in `web/` (React + Vite, built from the shared `yecoyz_uilibrary` components). `web/dist` is committed,
+so a fresh clone needs no build. After changing `web/src`, run `npm install && npm run build` in `web/`.

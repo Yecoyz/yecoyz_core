@@ -1,15 +1,17 @@
--- Notifications: Config.Notify picks ox_lib, the framework or the GTA feed.
+-- Notifications: Config.Notify picks yecoyz (the core's own UI), ox_lib, the framework or the GTA feed.
 -- type: 'info' | 'success' | 'error' | 'warning' ('inform' and 'primary' are read as 'info').
 local C = Core.Client
 local fw = Core.Framework
 
 local aliases = { inform = 'info', primary = 'info', warn = 'warning' }
+local noteId = 0
 local oxTypes = { info = 'inform', success = 'success', error = 'error', warning = 'warning' }
 local qbTypes = { info = 'primary', success = 'success', error = 'error', warning = 'warning' }
 
 local function provider()
     local wanted = Config.Notify
-    if wanted == 'auto' or not wanted then
+    if not wanted then return 'yecoyz' end
+    if wanted == 'auto' then
         if Core.IsRunning('ox_lib') then return 'ox_lib' end
         if fw ~= 'standalone' then return 'framework' end
         return 'native'
@@ -30,7 +32,16 @@ function C.Notify(message, notifyType, duration, title)
     duration = tonumber(duration) or Config.NotifyDuration
 
     local use = provider()
-    if use == 'ox_lib' then
+    if use == 'yecoyz' then
+        noteId = noteId + 1
+        Core.SendUI('notify', {
+            id = noteId,
+            message = message,
+            type = qbTypes[notifyType] and notifyType or 'info',
+            title = title or Config.NotifyTitle,
+            duration = duration,
+        })
+    elseif use == 'ox_lib' then
         TriggerEvent('ox_lib:notify', {
             title = title or Config.NotifyTitle,
             description = message,

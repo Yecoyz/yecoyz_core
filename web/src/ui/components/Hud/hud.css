@@ -1,0 +1,133 @@
+.keycap {
+  display: inline-block;
+  min-width: 26px;
+  padding: 4px 7px;
+  background: var(--panel-3);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-badge);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.keycap-sym {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1;
+}
+
+.keycap-accent {
+  background: var(--accent);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
+}
+
+.hud-controls {
+  position: fixed;
+  right: 2%;
+  bottom: 3%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 96vw;
+  padding: 10px 14px;
+  background: rgba(24, 24, 27, 0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-float);
+}
+
+.hud-controls-title {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  padding-right: 14px;
+  border-right: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+
+.hud-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+}
+
+.hud-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hud-control.dim {
+  opacity: 0.45;
+}
+
+.hud-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 9%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  background: rgba(24, 24, 27, 0.92);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-float);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transform: translateX(-50%);
+  animation: y-fade var(--t-panel) ease-out both;
+}
+
+.hud-prompt-plain {
+  padding-left: 16px;
+}
+
+.hud-prompt-inline {
+  position: static;
+  transform: none;
+}
+
+.hud-card {
+  position: relative;
+  padding: 14px;
+  overflow: hidden;
+  background: rgba(24, 24, 27, 0.96);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-float);
+}
+
+.hud-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.hud-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.hud-card-meta {
+  color: var(--fg);
+}
