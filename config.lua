@@ -13,6 +13,8 @@ Config = {
     -- Interactions (Core.AddInteraction): a menu on the prop or door handle you walk up to, no target key.
     Interact = {
         Enabled = true,
+        UI = 'yecoyz', -- 'yecoyz' (a menu on the spot) | 'ox_lib' (ox_lib's text UI shows the selected option)
+        OxPosition = 'right-center', -- where ox_lib's text UI sits: 'right-center' | 'left-center' | 'top-center' | 'bottom-center'
         Key = 38, -- control that uses the selected option (38 = E). Scrolling switches between the options.
         KeyLabel = 'E', -- shown when the game can't tell which key the control is bound to
         Distance = 2.0, -- default distance in metres

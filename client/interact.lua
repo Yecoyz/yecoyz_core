@@ -292,10 +292,17 @@ end
 ---------------------------------------------------------------------------------------------------------------------
 -- Showing it
 ---------------------------------------------------------------------------------------------------------------------
+-- Config.Interact.UI = 'ox_lib' shows the selected option as ox_lib's text UI instead of the menu on the spot. It has
+-- nothing to pin to the world, so it shows whenever a spot is in range.
+local function oxLib()
+    return cfg.UI == 'ox_lib' and Core.IsRunning('ox_lib')
+end
+
 local function hide()
     if shown then
+        local ox = shown.ox
         shown = nil
-        Core.SendUI('interact:hide')
+        if ox then exports.ox_lib:hideTextUI() else Core.SendUI('interact:hide') end
     end
 end
 
@@ -372,8 +379,13 @@ local function frame()
     local pos = anchorPosition()
     if not pos then current = nil return end
 
-    local onScreen, x, y = GetScreenCoordFromWorldCoord(pos.x, pos.y, pos.z)
-    if not onScreen then hide() return end
+    local ox = oxLib()
+    local x, y
+    if not ox then
+        local onScreen
+        onScreen, x, y = GetScreenCoordFromWorldCoord(pos.x, pos.y, pos.z)
+        if not onScreen then hide() return end
+    end
 
     local count = #current.options
     local index = selectedIndex()
@@ -389,8 +401,18 @@ local function frame()
     end
 
     local sig = signature()
-    if not shown or shown.key ~= current.key or shown.sig ~= sig or shown.index ~= index then
+    if not shown or shown.ox ~= ox or shown.key ~= current.key or shown.sig ~= sig or shown.index ~= index then
+        if shown and shown.ox ~= ox then hide() end
         if not shown or shown.key ~= current.key then targetSeq = targetSeq + 1 end
+        if ox then
+            local entry = current.options[index]
+            local text = ('**[%s]** %s'):format(keyLabel(), entry.opt.label)
+            -- Two spaces and a line break: a new line in markdown.
+            if count > 1 then text = ('%s  \n%s %d / %d'):format(text, cfg.ScrollLabel or 'Scroll', index, count) end
+            exports.ox_lib:showTextUI(text, { position = cfg.OxPosition or 'right-center', icon = entry.opt.icon })
+            shown = { ox = true, key = current.key, sig = sig, index = index }
+            goto pressedKey
+        end
         local options = {}
         for i, entry in ipairs(current.options) do
             options[i] = { id = entry.opt.uid, label = entry.opt.label, icon = entry.opt.icon }
@@ -404,12 +426,13 @@ local function frame()
             x = x,
             y = y,
         })
-        shown = { key = current.key, sig = sig, index = index, x = x, y = y }
-    elseif math.abs(x - shown.x) + math.abs(y - shown.y) > 0.0008 then
+        shown = { ox = false, key = current.key, sig = sig, index = index, x = x, y = y }
+    elseif not ox and math.abs(x - shown.x) + math.abs(y - shown.y) > 0.0008 then
         Core.SendUI('interact:move', { x = x, y = y })
         shown.x, shown.y = x, y
     end
 
+    ::pressedKey::
     if IsDisabledControlJustPressed(0, cfg.Key or 38) then
         local now = GetGameTimer()
         if now - lastUse > 300 then

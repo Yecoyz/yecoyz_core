@@ -177,6 +177,12 @@ The options of one spot are shown together, and when several spots are in range 
 Registrations are removed when the resource that added them stops. The key, distance and scan rate are in
 `Config.Interact`.
 
+`Config.Interact.UI = 'ox_lib'` shows the selected option as ox_lib's text UI (`[E] Lock door`, with `Scroll 2 / 3`
+below when there are several) instead of the menu on the spot, since ox_lib has nothing to pin to the world. Scrolling,
+the key and everything else work the same. `OxPosition` sets where the text UI sits, and it falls back to the
+yecoyz menu when ox_lib isn't running. Option icons are passed on as they are, so use names that exist in both lucide
+and FontAwesome (`'lock'`, `'hand'`, `'door-open'`) if you switch.
+
 ## Controls card
 
 Shows the keys of a mode and what they do, bottom-right. Each resource has its own card and the latest one is shown;
