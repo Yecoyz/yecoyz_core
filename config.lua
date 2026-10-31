@@ -30,5 +30,5 @@ Config = {
     -- Print a console notice when a yecoyz_* resource has a newer version on yecoyz.com (checked on start).
     VersionCheck = true,
 
-    Debug = true,
+    Debug = false,
 }
