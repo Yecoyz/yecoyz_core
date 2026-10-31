@@ -272,8 +272,8 @@ end
 -- Notifications, permissions, login
 ---------------------------------------------------------------------------------------------------------------------
 -- type: 'info' | 'success' | 'error' | 'warning'. Shown with the client's notify (client/notify.lua).
-function S.Notify(source, message, notifyType, duration, title)
-    TriggerClientEvent('yecoyz_core:client:notify', source, message, notifyType, duration, title)
+function S.Notify(source, message, notifyType, duration, title, icon)
+    TriggerClientEvent('yecoyz_core:client:notify', source, message, notifyType, duration, title, icon)
 end
 
 -- Ace permission, or a framework group (ESX group / QBCore permission) such as 'admin'.

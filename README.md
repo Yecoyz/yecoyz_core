@@ -103,7 +103,7 @@ Core.Callback.Trigger('yecoyz_radar:getPlate', source, function(plate) end)
 | `HasItem(source, item, count, metadata)` | `item` can be a list: true if they have any of them |
 | `CanCarryItem` / `AddItem` / `RemoveItem` `(source, item, count, metadata)` | `RemoveItem` only removes when the player has enough |
 | `RegisterUsableItem(item, fn(source, data))` | Framework usable item (ox_inventory items are set in its item data) |
-| `Notify(source, message, type, duration, title)` | `type`: `'info'`, `'success'`, `'error'` or `'warning'` |
+| `Notify(source, message, type, duration, title, icon)` | `type`: `'info'`, `'success'`, `'error'` or `'warning'` |
 | `HasPermission(source, permission)` | Ace, or the ESX group / QBCore permission |
 | `Login(source, identifier, data)` / `Logout(source)` | For multicharacter: ESX `identifier` is the prefix (`char1`), QB / Qbox the citizenid |
 
@@ -117,7 +117,7 @@ Core.Callback.Trigger('yecoyz_radar:getPlate', source, function(plate) end)
 | `GetIdentifier()`, `GetJob()`, `HasJob(jobs, minGrade)` | Same shapes as the server |
 | `GetCharacter()`, `GetName()`, `GetFullName()`, `GetSex()` | `GetSex()`: 0 male / 1 female |
 | `GetMoney(account)`, `GetItemCount(item)`, `HasItem(item, count)` | From the player data or ox_inventory. Do the real checks on the server. |
-| `Notify(message, type, duration, title)` | The core's own notification UI by default (`Config.Notify`) |
+| `Notify(message, type, duration, title, icon)` | The core's own notification UI by default (`Config.Notify`) |
 | `AddInteraction(data)` / `RemoveInteraction(id)` | See [Interactions](#interactions) |
 | `GetActiveInteraction()` | The menu on screen: `{ index, options = { { name, label } } }`, or nil |
 | `SetInteractionsDisabled(state)` | Hide and pause every interaction, e.g. during a minigame |
@@ -127,8 +127,10 @@ Core.Callback.Trigger('yecoyz_radar:getPlate', source, function(plate) end)
 
 ## Notifications
 
-`Core.Notify(message, type, duration, title)` shows a small toast at the top of the screen with a coloured bar for the
-type (`info`, `success`, `error`, `warning`). From the server it is `Core.Notify(source, message, type, duration, title)`.
+`Core.Notify(message, type, duration, title, icon)` shows a small notification in the top-right corner: an icon tile
+coloured for the type (`info`, `success`, `error`, `warning`), an optional title and the message. Every type has its own
+icon; `icon` takes any [lucide](https://lucide.dev/icons) name (`'bell'`) to replace it. From the server it is
+`Core.Notify(source, message, type, duration, title, icon)`.
 `Config.Notify = 'yecoyz'` is the default; set `'auto'`, `'ox_lib'`, `'framework'` or `'native'` to use something else.
 
 ## Interactions

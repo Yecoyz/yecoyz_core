@@ -25,7 +25,8 @@ local function native(message)
     EndTextCommandThefeedPostTicker(false, true)
 end
 
-function C.Notify(message, notifyType, duration, title)
+-- icon: a lucide icon name for the yecoyz UI ('bell'); every type has its own when left out.
+function C.Notify(message, notifyType, duration, title, icon)
     if message == nil then return end
     message = tostring(message)
     notifyType = aliases[notifyType] or notifyType or 'info'
@@ -39,6 +40,7 @@ function C.Notify(message, notifyType, duration, title)
             message = message,
             type = qbTypes[notifyType] and notifyType or 'info',
             title = title or Config.NotifyTitle,
+            icon = icon,
             duration = duration,
         })
     elseif use == 'ox_lib' then
@@ -59,6 +61,6 @@ function C.Notify(message, notifyType, duration, title)
     end
 end
 
-RegisterNetEvent('yecoyz_core:client:notify', function(message, notifyType, duration, title)
-    C.Notify(message, notifyType, duration, title)
+RegisterNetEvent('yecoyz_core:client:notify', function(message, notifyType, duration, title, icon)
+    C.Notify(message, notifyType, duration, title, icon)
 end)

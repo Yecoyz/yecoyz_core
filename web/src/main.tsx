@@ -12,11 +12,12 @@ if (isBrowser) {
     { id: 2, label: 'Lock door', icon: 'lock' },
     { id: 3, label: 'Knock', icon: 'hand' },
   ]
-  debugNui('notify', { message: 'Your phone is ringing.', type: 'info', duration: 8000 }, 100)
-  debugNui('notify', { title: 'Bank', message: 'Transfer received: $1,500', type: 'success', duration: 8000 }, 400)
-  debugNui('notify', { message: 'You dropped the package.', type: 'error', duration: 8000 }, 700)
-  debugNui('interact:show', { target: 1, options, index: 0, key: 'E', scrollLabel: 'Scroll', x: 0.5, y: 0.5 }, 200)
-  debugNui('interact:show', { target: 1, options, index: 1, key: 'E', scrollLabel: 'Scroll', x: 0.5, y: 0.5 }, 1500)
+  debugNui('notify', { id: 1, message: 'Your phone is ringing.', type: 'info', duration: 8000 }, 100)
+  debugNui('notify', { id: 2, title: 'Bank', message: 'Transfer received: $1,500', type: 'success', duration: 8000 }, 400)
+  debugNui('notify', { id: 3, message: 'You dropped the package.', type: 'error', duration: 8000 }, 700)
+  debugNui('interact:show', { target: 1, options, index: 1, key: 'E', scrollLabel: 'Scroll', x: 0.5, y: 0.5 }, 200)
+  debugNui('notify', { id: 4, title: 'Warning', message: 'Your vehicle is almost out of fuel and the engine may stall soon.', type: 'warning', duration: 8000 }, 900)
+  debugNui('interact:show', { target: 1, options, index: 2, key: 'E', scrollLabel: 'Scroll', x: 0.5, y: 0.5 }, 1500)
   debugNui(
     'controls:set',
     {
