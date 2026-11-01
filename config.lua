@@ -26,6 +26,14 @@ Config = {
     -- ESX has no boss flag on jobs: these grade names count as boss in GetJob().isBoss.
     BossGrades = { 'boss' },
 
+    -- Company (society) accounts used by GetSocietyMoney / AddSocietyMoney / RemoveSocietyMoney.
+    -- 'auto' picks esx_addonaccount (ESX), Renewed-Banking, qb-banking, qb-management, else 'internal' (the core's
+    -- own yecoyz_core_society table). Needs oxmysql.
+    Society = {
+        System = 'auto', -- 'auto' | 'internal' | 'esx_addonaccount' | 'renewed-banking' | 'qb-banking' | 'qb-management'
+        AccountPrefix = 'society_', -- esx_addonaccount account name: society_<job>
+    },
+
     -- Item used for cash when there is no framework but ox_inventory runs.
     MoneyItem = 'money',
 

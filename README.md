@@ -107,6 +107,23 @@ Core.Callback.Trigger('yecoyz_radar:getPlate', source, function(plate) end)
 | `HasPermission(source, permission)` | Ace, or the ESX group / QBCore permission |
 | `Login(source, identifier, data)` / `Logout(source)` | For multicharacter: ESX `identifier` is the prefix (`char1`), QB / Qbox the citizenid |
 
+### Companies
+
+Job grades, employees, company accounts and owned vehicles. These read the framework's tables, so they need oxmysql.
+
+| Function | Returns |
+|---|---|
+| `GetJobData(job)` | `{ name, label, grades = { { grade, name, label, salary, isBoss } } }`, sorted by grade |
+| `SaveJobGrade(job, grade, { name, label, salary })` / `DeleteJobGrade(job, grade)` | `true` on success. ESX writes `job_grades`; QBCore / Qbox change the job at runtime and the core puts the change back on every start |
+| `GetJobEmployees(job)` | Everyone with the job in the database: `{ identifier, firstname, lastname, grade, phone, lastSeen }` |
+| `SetJobByIdentifier(identifier, job, grade)` | Online or offline character. `true` on success |
+| `GetDefaultJob()` | `'unemployed', 0` |
+| `GetSocietyMoney(job)` | Company account balance |
+| `AddSocietyMoney(job, amount, reason)` / `RemoveSocietyMoney(job, amount, reason)` | `RemoveSocietyMoney` only takes it when there is enough |
+| `GetSocietySystem()` | The banking script in use (`Config.Society`) |
+| `GeneratePlate(prefix)` / `IsPlateTaken(plate)` | A free 8 character plate |
+| `GiveVehicle(source, model, plate, job)` | Puts the vehicle in the player's garage (`owned_vehicles` / `player_vehicles`) |
+
 ## Client API
 
 | Function | Returns |
@@ -212,7 +229,7 @@ Event names: `yecoyz_core:server:playerLoaded`, `:playerUnloaded`, `:jobUpdated`
 ## Config
 
 `config.lua`: `Framework` and `Inventory` are `'auto'` by default and `Notify` is `'yecoyz'`. There's also the default
-notification title and duration, the `Interact` settings (key, distance, scan rate), `BossGrades` (ESX grade names that count as boss, since ESX jobs have no boss flag), the cash item
+notification title and duration, the `Interact` settings (key, distance, scan rate), `BossGrades` (ESX grade names that count as boss, since ESX jobs have no boss flag), `Society` (which banking script holds company accounts), the cash item
 used without a framework, `VersionCheck` and `Debug`.
 
 ## Update notices
