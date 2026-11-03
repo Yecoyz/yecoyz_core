@@ -120,9 +120,12 @@ Job grades, employees, company accounts and owned vehicles. These read the frame
 | `GetDefaultJob()` | `'unemployed', 0` |
 | `GetSocietyMoney(job)` | Company account balance |
 | `AddSocietyMoney(job, amount, reason)` / `RemoveSocietyMoney(job, amount, reason)` | `RemoveSocietyMoney` only takes it when there is enough |
+| `SwapJobGrades(job, a, b)` | Swaps the places of two grades. Everyone with one of them, online or offline, moves along and keeps their rank |
 | `GetSocietySystem()` | The banking script in use (`Config.Society`) |
 | `GeneratePlate(prefix)` / `IsPlateTaken(plate)` | A free 8 character plate |
-| `GiveVehicle(source, model, plate, job)` | Puts the vehicle in the player's garage (`owned_vehicles` / `player_vehicles`) |
+| `GiveVehicle(source, model, plate, job, garage?)` | Puts the vehicle in the player's garage. Returns `true`, the garage id and the garage's name. Works with jg-advancedgarages, zyke_garages, qbx_garages, qb-garages and esx_garage (`Config.Garage`), else only the framework's vehicle table |
+| `GiveJobVehicle(source, job, model, plate, garage?, minGrade?)` | Puts the vehicle in the job's work garage. zyke_garages and jg-advancedgarages make the job the owner; qbx_garages, qb-garages and esx_garage park it in / mark it for the job garage (`Config.Garage.JobGarages`). Returns `true`, the garage id and name |
+| `GetGarageSystem()` | The garage script in use (`Config.Garage`) |
 
 ## Client API
 

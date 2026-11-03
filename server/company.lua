@@ -153,6 +153,51 @@ function S.DeleteJobGrade(jobName, grade)
     return true
 end
 
+-- Swaps the places of two grades (e.g. Officer 1 and Sergeant 2 become Sergeant 1 and Officer 2). Everyone with one
+-- of them, online or offline, moves along so they keep their rank. Returns true on success.
+function S.SwapJobGrades(jobName, a, b)
+    a, b = tonumber(a), tonumber(b)
+    if type(jobName) ~= 'string' or not a or not b or a == b then return false end
+    local job = S.GetJobData(jobName)
+    if not job then return false end
+    local ga, gb
+    for _, g in ipairs(job.grades) do
+        if g.grade == a then ga = g elseif g.grade == b then gb = g end
+    end
+    if not ga or not gb then return false end
+
+    -- Who has them now (online players by their live job, the rest from the database).
+    local moves = {}
+    for _, e in ipairs(S.GetJobEmployees(jobName)) do moves[e.identifier] = e.grade end
+    for _, src in ipairs(S.GetPlayersByJob(jobName)) do
+        local id, pjob = S.GetIdentifier(src), S.GetJob(src)
+        if id and pjob then moves[id] = pjob.grade end
+    end
+
+    if ESX then
+        -- job_grades may have no unique key, so move one grade out of the way first.
+        update('UPDATE `job_grades` SET `grade` = -999 WHERE `job_name` = ? AND `grade` = ?', { jobName, a })
+        update('UPDATE `job_grades` SET `grade` = ? WHERE `job_name` = ? AND `grade` = ?', { a, jobName, b })
+        update('UPDATE `job_grades` SET `grade` = ? WHERE `job_name` = ? AND `grade` = -999', { b, jobName })
+        ESX.RefreshJobs()
+    elseif QB or qbx then
+        local da = { label = ga.label, salary = ga.salary, isBoss = ga.isBoss }
+        local db_ = { label = gb.label, salary = gb.salary, isBoss = gb.isBoss }
+        if not qbApply(jobName, a, db_) or not qbApply(jobName, b, da) then return false end
+        saveOverride(jobName, a, db_)
+        saveOverride(jobName, b, da)
+    else
+        return false
+    end
+
+    for identifier, grade in pairs(moves) do
+        if grade == a then S.SetJobByIdentifier(identifier, jobName, b)
+        elseif grade == b then S.SetJobByIdentifier(identifier, jobName, a) end
+    end
+    refreshJob(jobName)
+    return true
+end
+
 if (QB or qbx) and GetResourceState('oxmysql') == 'started' then
     CreateThread(function()
         db('query', [[
@@ -387,24 +432,202 @@ function S.GeneratePlate(prefix)
     return prefix .. tostring(math.random(10, 99))
 end
 
+---------------------------------------------------------------------------------------------------------------------
+-- Garages. Config.Garage.System picks the garage script; vehicles are put straight in a garage so they show up there.
+---------------------------------------------------------------------------------------------------------------------
+local garageSystems = { 'jg-advancedgarages', 'zyke_garages', 'qbx_garages', 'qb-garages', 'esx_garage' }
+local garageAlias = { esx_garages = 'esx_garage' }
+local garageSystem
+
+local function garageName()
+    if garageSystem then return garageSystem end
+    local wanted = Config.Garage and Config.Garage.System or 'auto'
+    wanted = garageAlias[wanted] or wanted
+    if wanted ~= 'auto' then
+        garageSystem = wanted
+    else
+        garageSystem = 'default'
+        for _, name in ipairs(garageSystems) do
+            if Core.IsRunning(name) or (name == 'esx_garage' and Core.IsRunning('esx_garages')) then garageSystem = name break end
+        end
+    end
+    return garageSystem
+end
+
+-- The garage script used by GiveVehicle: 'jg-advancedgarages', 'zyke_garages', ..., or 'default'.
+function S.GetGarageSystem() return garageName() end
+
+local defaultGarage = {
+    ['qb-garages'] = 'motelgarage',
+    ['qbx_garages'] = 'motelgarage',
+    ['jg-advancedgarages'] = 'Legion Square',
+}
+
+local function esxGarageDefault()
+    local res = Core.IsRunning('esx_garage') and 'esx_garage' or 'esx_garages'
+    local ok, garages = pcall(function() return exports[res]:getGarages() end)
+    if ok and type(garages) == 'table' then
+        local names = {}
+        for name in pairs(garages) do names[#names + 1] = name end
+        table.sort(names)
+        return names[1]
+    end
+end
+
+-- The garage a new vehicle goes to: the one asked for, Config.Garage.Default, or the garage script's default.
+local function pickGarage(system, garage)
+    if type(garage) == 'string' and garage ~= '' then return garage end
+    local configured = Config.Garage and Config.Garage.Default
+    if type(configured) == 'string' and configured ~= '' then return configured end
+    if system == 'esx_garage' then return esxGarageDefault() end
+    return defaultGarage[system]
+end
+
+-- Inserts the row with the columns this server's table has. extra = { column = value } (skipped when missing).
+local function insertVehicle(tableName, base, extra)
+    local cols, values = {}, {}
+    for col, value in pairs(base) do cols[#cols + 1] = col values[#values + 1] = value end
+    for col, value in pairs(extra or {}) do
+        if value ~= nil and hasColumn(tableName, col) then cols[#cols + 1] = col values[#values + 1] = value end
+    end
+    local marks = {}
+    for i = 1, #cols do marks[i] = '?' cols[i] = '`' .. cols[i] .. '`' end
+    return insert(('INSERT INTO `%s` (%s) VALUES (%s)'):format(tableName, table.concat(cols, ', '), table.concat(marks, ', ')), values) ~= nil
+end
+
 -- Puts a vehicle in the player's garage. job (optional) marks it as a job vehicle where the table supports it.
-function S.GiveVehicle(source, model, plate, job)
+-- garage (optional) = garage name/id, otherwise Config.Garage.Default or the garage script's default.
+-- Returns true, the garage id it went to and that garage's name (for messages).
+function S.GiveVehicle(source, model, plate, job, garage)
     local identifier = S.GetIdentifier(source)
     if not identifier or type(model) ~= 'string' or type(plate) ~= 'string' then return false end
+    local system = garageName()
+    garage = pickGarage(system, garage)
     local hash = joaat(model)
-    if ESX then
-        local props = json.encode({ model = hash, plate = plate })
-        if job and hasColumn('owned_vehicles', 'job') then
-            return insert('INSERT INTO `owned_vehicles` (`owner`, `plate`, `vehicle`, `type`, `job`, `stored`) VALUES (?, ?, ?, ?, ?, 1)', {
-                identifier, plate, props, 'car', job,
-            }) ~= nil
+
+    if system == 'zyke_garages' then
+        local ok, success, result = pcall(function()
+            return exports.zyke_garages:GiveVehicle(model, source, { plate = plate, garage = garage })
+        end)
+        if not ok or not success then
+            print(('^1[yecoyz_core] zyke_garages GiveVehicle failed: %s^7'):format(ok and tostring(result) or tostring(success)))
+            return false
         end
-        return insert('INSERT INTO `owned_vehicles` (`owner`, `plate`, `vehicle`, `stored`) VALUES (?, ?, ?, 1)', { identifier, plate, props }) ~= nil
+        local id = type(result) == 'table' and result.garage or garage
+        local label = id and scalar('SELECT `label` FROM `zyke_garages` WHERE `id` = ?', { id })
+        return true, id, label or id
+    end
+
+    if system == 'qbx_garages' and Core.IsRunning('qbx_vehicles') then
+        local ok, id = pcall(function()
+            return exports.qbx_vehicles:CreatePlayerVehicle({ model = model, citizenid = identifier, garage = garage, props = { plate = plate } })
+        end)
+        return ok and id ~= nil, garage, garage
+    end
+
+    local jg = system == 'jg-advancedgarages'
+    if ESX then
+        local base = { owner = identifier, plate = plate, vehicle = json.encode({ model = hash, plate = plate }), stored = 1 }
+        local ok = insertVehicle('owned_vehicles', base, {
+            type = 'car',
+            job = job,
+            parking = system == 'esx_garage' and garage or nil,
+            garage_id = jg and garage or nil,
+            in_garage = jg and 1 or nil,
+        })
+        return ok, garage, garage
     end
     if QB or qbx then
-        return insert('INSERT INTO `player_vehicles` (`license`, `citizenid`, `vehicle`, `hash`, `mods`, `plate`, `state`) VALUES (?, ?, ?, ?, ?, ?, 1)', {
-            S.GetLicense(source), identifier, model, hash, '{}', plate,
-        }) ~= nil
+        local base = { license = S.GetLicense(source), citizenid = identifier, vehicle = model, hash = hash, mods = '{}', plate = plate, state = 1 }
+        local ok = insertVehicle('player_vehicles', base, {
+            garage = (not jg) and garage or nil,
+            garage_id = jg and garage or nil,
+            in_garage = jg and 1 or nil,
+        })
+        return ok, garage, garage
+    end
+    return false
+end
+
+-- Puts a vehicle in a job (work) garage instead of the buyer's own garage. How shared it is depends on the garage
+-- script:
+--   zyke_garages        owned by the job itself, in one of the job's garages (zyke picks it when garage is nil)
+--   jg-advancedgarages  owned by the job (job vehicle, used from rank minGrade), in the job garage
+--   qbx_garages         in the job garage (key = job name by default); everyone in the job sees it if that garage has
+--                       shared = true, otherwise the buyer
+--   qb-garages          in the job garage (key = job name by default), listed for the buyer
+--   esx_garage / ESX    marked with the job (owned_vehicles.job) so job garages list it, owned by the buyer
+-- garage = garage name/id (nil = Config.Garage.JobGarages[job], then the default above). Returns true, the garage id
+-- and its name.
+function S.GiveJobVehicle(source, job, model, plate, garage, minGrade)
+    local identifier = S.GetIdentifier(source)
+    if not identifier or type(job) ~= 'string' or type(model) ~= 'string' or type(plate) ~= 'string' then return false end
+    local system = garageName()
+    local jobGarages = Config.Garage and Config.Garage.JobGarages or {}
+    if type(garage) ~= 'string' or garage == '' then garage = jobGarages[job] end
+    if (type(garage) ~= 'string' or garage == '') and system ~= 'zyke_garages' and system ~= 'esx_garage' and system ~= 'default' then
+        garage = job
+    end
+    minGrade = math.max(0, math.floor(tonumber(minGrade) or 0))
+    local hash = joaat(model)
+
+    if system == 'zyke_garages' then
+        -- zyke only picks a job garage by itself for restricted jobs, so look for a garage made for this job.
+        if not garage then
+            for _, row in ipairs(query('SELECT `id`, `access` FROM `zyke_garages` WHERE `active` IS NULL OR `active` <> 0')) do
+                local access = decode(row.access)
+                if access.value == 'profession' then
+                    for _, p in ipairs(access.professions or {}) do
+                        if p.profession == job and (p.professionType or 'job') == 'job' then garage = row.id break end
+                    end
+                end
+                if garage then break end
+            end
+        end
+        local ok, success, result = pcall(function()
+            return exports.zyke_garages:GiveVehicle(model, job, { plate = plate, garage = garage, professionType = 'job' })
+        end)
+        if not ok or not success then
+            print(('^1[yecoyz_core] zyke_garages job vehicle for %s failed: %s (does the job have a garage in zyke_garages?)^7')
+                :format(job, ok and tostring(result) or tostring(success)))
+            return false
+        end
+        local id = type(result) == 'table' and result.garage or garage
+        local label = id and scalar('SELECT `label` FROM `zyke_garages` WHERE `id` = ?', { id })
+        return true, id, label or id
+    end
+
+    if system == 'qbx_garages' and Core.IsRunning('qbx_vehicles') then
+        local ok, id = pcall(function()
+            return exports.qbx_vehicles:CreatePlayerVehicle({ model = model, citizenid = identifier, garage = garage, props = { plate = plate } })
+        end)
+        return ok and id ~= nil, garage, garage
+    end
+
+    local jg = system == 'jg-advancedgarages'
+    if ESX then
+        local base = { owner = jg and job or identifier, plate = plate, vehicle = json.encode({ model = hash, plate = plate }), stored = 1 }
+        local ok = insertVehicle('owned_vehicles', base, {
+            type = 'car',
+            job = job,
+            parking = system == 'esx_garage' and garage or nil,
+            garage_id = jg and garage or nil,
+            in_garage = jg and 1 or nil,
+            job_vehicle = jg and 1 or nil,
+            job_vehicle_rank = jg and minGrade or nil,
+        })
+        return ok, garage, garage
+    end
+    if QB or qbx then
+        local base = { license = S.GetLicense(source), citizenid = jg and job or identifier, vehicle = model, hash = hash, mods = '{}', plate = plate, state = 1 }
+        local ok = insertVehicle('player_vehicles', base, {
+            garage = (not jg) and garage or nil,
+            garage_id = jg and garage or nil,
+            in_garage = jg and 1 or nil,
+            job_vehicle = jg and 1 or nil,
+            job_vehicle_rank = jg and minGrade or nil,
+        })
+        return ok, garage, garage
     end
     return false
 end

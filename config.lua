@@ -34,6 +34,21 @@ Config = {
         AccountPrefix = 'society_', -- esx_addonaccount account name: society_<job>
     },
 
+    -- Garage script used when a resource gives a player a vehicle (GiveVehicle). 'auto' picks the first running one of
+    -- jg-advancedgarages, zyke_garages, qbx_garages, qb-garages and esx_garage, else 'default' (the framework's
+    -- vehicle table only). Default = garage name/id new vehicles go to; nil = the garage script's own default
+    -- (qb/qbx: motelgarage, jg: Legion Square, esx_garage: its first garage, zyke: the player's default garage).
+    Garage = {
+        System = 'auto', -- 'auto' | 'default' | 'jg-advancedgarages' | 'zyke_garages' | 'qbx_garages' | 'qb-garages' | 'esx_garage'
+        Default = nil,
+        -- Job (work) garages for GiveJobVehicle: [job] = garage name/id. Not listed = the job name for qb-garages,
+        -- qbx_garages and jg-advancedgarages (their job garages are named after the job by default), zyke_garages
+        -- picks one of the job's own garages.
+        JobGarages = {
+            -- police = 'police',
+        },
+    },
+
     -- Item used for cash when there is no framework but ox_inventory runs.
     MoneyItem = 'money',
 
