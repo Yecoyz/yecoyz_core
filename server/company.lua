@@ -631,3 +631,52 @@ function S.GiveJobVehicle(source, job, model, plate, garage, minGrade)
     end
     return false
 end
+
+---------------------------------------------------------------------------------------------------------------------
+-- Vehicle keys. Config.VehicleKeys picks the key script; 'auto' finds the first running one.
+---------------------------------------------------------------------------------------------------------------------
+local keySystems = { 'qbx_vehiclekeys', 'wasabi_carlock', 'Renewed-Vehiclekeys', 'qb-vehiclekeys' }
+
+local function keySystem()
+    local wanted = Config.VehicleKeys or 'auto'
+    if wanted ~= 'auto' then return wanted end
+    for _, name in ipairs(keySystems) do
+        if Core.IsRunning(name) then return name end
+    end
+    return 'none'
+end
+
+-- The key script used by GiveVehicleKeys, or 'none'.
+function S.GetVehicleKeySystem() return keySystem() end
+
+-- Gives the player the keys of a spawned vehicle. netId = the vehicle's network id; plate (optional) defaults to the
+-- vehicle's plate. Returns true when a key script took it.
+function S.GiveVehicleKeys(source, netId, plate)
+    source = tonumber(source)
+    if not source or not GetPlayerName(source) or not tonumber(netId) then return false end
+    local vehicle = NetworkGetEntityFromNetworkId(tonumber(netId))
+    if not vehicle or vehicle == 0 or not DoesEntityExist(vehicle) then return false end
+    plate = type(plate) == 'string' and plate or GetVehicleNumberPlateText(vehicle)
+    plate = plate and plate:gsub('^%s+', ''):gsub('%s+$', '')
+
+    local system = keySystem()
+    local ok, result = pcall(function()
+        if system == 'qbx_vehiclekeys' then
+            -- false when the player has the keys already
+            exports.qbx_vehiclekeys:GiveKeys(source, vehicle)
+            return true
+        elseif system == 'wasabi_carlock' then
+            exports.wasabi_carlock:GiveKey(source, plate)
+            return true
+        elseif system == 'Renewed-Vehiclekeys' then
+            exports['Renewed-Vehiclekeys']:addKey(source, plate)
+            return true
+        elseif system == 'qb-vehiclekeys' then
+            TriggerClientEvent('vehiclekeys:client:SetOwner', source, plate)
+            return true
+        end
+        return false
+    end)
+    if not ok then print(('^1[yecoyz_core] %s could not give keys: %s^7'):format(system, tostring(result))) end
+    return ok and result == true
+end

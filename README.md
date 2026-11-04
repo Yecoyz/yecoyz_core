@@ -125,6 +125,8 @@ Job grades, employees, company accounts and owned vehicles. These read the frame
 | `GeneratePlate(prefix)` / `IsPlateTaken(plate)` | A free 8 character plate |
 | `GiveVehicle(source, model, plate, job, garage?)` | Puts the vehicle in the player's garage. Returns `true`, the garage id and the garage's name. Works with jg-advancedgarages, zyke_garages, qbx_garages, qb-garages and esx_garage (`Config.Garage`), else only the framework's vehicle table |
 | `GiveJobVehicle(source, job, model, plate, garage?, minGrade?)` | Puts the vehicle in the job's work garage. zyke_garages and jg-advancedgarages make the job the owner; qbx_garages, qb-garages and esx_garage park it in / mark it for the job garage (`Config.Garage.JobGarages`). Returns `true`, the garage id and name |
+| `GiveVehicleKeys(source, netId, plate?)` | Gives the player the keys of a spawned vehicle with qbx_vehiclekeys, wasabi_carlock, Renewed-Vehiclekeys or qb-vehiclekeys (`Config.VehicleKeys`). Returns `true` when a key script took it |
+| `GetVehicleKeySystem()` | The key script `GiveVehicleKeys` uses, or `'none'` |
 | `GetGarageSystem()` | The garage script in use (`Config.Garage`) |
 
 ## Client API

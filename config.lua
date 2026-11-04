@@ -49,6 +49,10 @@ Config = {
         },
     },
 
+    -- Key script used when a resource gives a player the keys of a vehicle it spawned (GiveVehicleKeys). 'auto' picks
+    -- the first running one of qbx_vehiclekeys, wasabi_carlock, Renewed-Vehiclekeys and qb-vehiclekeys, else none.
+    VehicleKeys = 'auto', -- 'auto' | 'none' | 'qbx_vehiclekeys' | 'wasabi_carlock' | 'Renewed-Vehiclekeys' | 'qb-vehiclekeys'
+
     -- Item used for cash when there is no framework but ox_inventory runs.
     MoneyItem = 'money',
 
