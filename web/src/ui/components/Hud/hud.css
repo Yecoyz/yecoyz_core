@@ -112,14 +112,6 @@
   box-shadow: var(--shadow-float);
 }
 
-.hud-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: var(--accent);
-}
-
 .hud-card-head {
   display: flex;
   align-items: center;

@@ -52,14 +52,6 @@
   transform: translateY(-50%);
 }
 
-.interact-card::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: var(--accent);
-}
-
 .interact-flip .interact-line {
   left: -24px;
 }

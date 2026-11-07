@@ -10,15 +10,6 @@
   box-shadow: var(--shadow-float);
 }
 
-.panel::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  z-index: 1;
-  height: 3px;
-  background: var(--bar);
-}
-
 .panel-danger {
   --bar: var(--danger);
 }
