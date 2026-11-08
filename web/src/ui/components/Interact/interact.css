@@ -27,7 +27,7 @@
   background: var(--accent);
   border: 2px solid var(--accent-ink);
   border-radius: 2px;
-  box-shadow: 0 0 0 1px var(--accent-border), 0 0 14px var(--accent-border);
+  box-shadow: 0 0 0 1px var(--accent-border);
 }
 
 .interact-line {
