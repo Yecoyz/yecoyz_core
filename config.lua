@@ -53,6 +53,11 @@ Config = {
     -- the first running one of qbx_vehiclekeys, wasabi_carlock, Renewed-Vehiclekeys and qb-vehiclekeys, else none.
     VehicleKeys = 'auto', -- 'auto' | 'none' | 'qbx_vehiclekeys' | 'wasabi_carlock' | 'Renewed-Vehiclekeys' | 'qb-vehiclekeys'
 
+    -- Phone script phone numbers are read from (GetPhoneNumber, GetCharacter().phone, GetJobEmployees). 'auto' uses
+    -- sd-phone when it runs, else the framework's number. With sd-phone's SIM cards on, a number is only known while
+    -- the player is online.
+    Phone = 'auto', -- 'auto' | 'none' | 'sd-phone'
+
     -- Item used for cash when there is no framework but ox_inventory runs.
     MoneyItem = 'money',
 

@@ -127,6 +127,8 @@ Job grades, employees, company accounts and owned vehicles. These read the frame
 | `GiveJobVehicle(source, job, model, plate, garage?, minGrade?)` | Puts the vehicle in the job's work garage. zyke_garages and jg-advancedgarages make the job the owner; qbx_garages, qb-garages and esx_garage park it in / mark it for the job garage (`Config.Garage.JobGarages`). Returns `true`, the garage id and name |
 | `GiveVehicleKeys(source, netId, plate?)` | Gives the player the keys of a spawned vehicle with qbx_vehiclekeys, wasabi_carlock, Renewed-Vehiclekeys or qb-vehiclekeys (`Config.VehicleKeys`). Returns `true` when a key script took it |
 | `GetVehicleKeySystem()` | The key script `GiveVehicleKeys` uses, or `'none'` |
+| `GetPhoneNumber(source or identifier)` | The character's phone number, online or offline, from the phone script (sd-phone, `Config.Phone`) or else the framework. `nil` when there is none. `GetCharacter().phone` and `GetJobEmployees` use the phone script too |
+| `GetPhoneSystem()` | The phone script numbers are read from, or `'none'` |
 | `GetGarageSystem()` | The garage script in use (`Config.Garage`) |
 
 ## Client API

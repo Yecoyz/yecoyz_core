@@ -232,6 +232,35 @@ local function hasColumn(tableName, column)
 end
 local function hasUserColumn(column) return hasColumn('users', column) end
 
+-- The phone number of a character, online (server id) or offline (identifier): from the phone script
+-- (Config.Phone) first, else the framework's own number. nil when there is none.
+function S.GetPhoneNumber(player)
+    local source = type(player) == 'number' and player or nil
+    local identifier = type(player) == 'string' and player or nil
+    if source then
+        identifier = S.GetIdentifier(source)
+    elseif identifier then
+        source = S.GetSourceFromIdentifier(identifier)
+    end
+    if not identifier then return nil end
+
+    if source then
+        local char = S.GetCharacter(source) -- phone script first, then the framework
+        return char and char.phone or nil
+    end
+
+    local phone = Core.ReadPhoneScript(nil, identifier)
+    if phone then return phone end
+    if ESX then
+        if not hasUserColumn('phone_number') then return nil end
+        phone = scalar('SELECT `phone_number` FROM `users` WHERE `identifier` = ?', { identifier })
+    elseif QB or qbx then
+        phone = decode(scalar('SELECT `charinfo` FROM `players` WHERE `citizenid` = ?', { identifier })).phone
+    end
+    if type(phone) == 'number' then phone = phone % 1 == 0 and ('%.0f'):format(phone) or tostring(phone) end
+    return type(phone) == 'string' and phone ~= '' and phone or nil
+end
+
 -- Every character with this job in the database, online or not:
 -- { identifier, firstname, lastname, grade, phone, lastSeen (epoch seconds or nil) }
 function S.GetJobEmployees(jobName)
@@ -243,7 +272,8 @@ function S.GetJobEmployees(jobName)
         for _, row in ipairs(query(('SELECT `identifier`, `firstname`, `lastname`, `job_grade`%s%s FROM `users` WHERE `job` = ?'):format(phone, seen), { jobName })) do
             list[#list + 1] = {
                 identifier = row.identifier, firstname = row.firstname or '', lastname = row.lastname or '',
-                grade = tonumber(row.job_grade) or 0, phone = row.phone_number, lastSeen = tonumber(row.last_seen),
+                grade = tonumber(row.job_grade) or 0, lastSeen = tonumber(row.last_seen),
+                phone = Core.ReadPhoneScript(S.GetSourceFromIdentifier(row.identifier), row.identifier) or row.phone_number,
             }
         end
     elseif QB or qbx then
@@ -256,7 +286,8 @@ function S.GetJobEmployees(jobName)
             local grade = type(job.grade) == 'table' and job.grade.level or job.grade
             list[#list + 1] = {
                 identifier = row.citizenid, firstname = info.firstname or '', lastname = info.lastname or '',
-                grade = tonumber(grade) or 0, phone = info.phone, lastSeen = tonumber(row.last_seen),
+                grade = tonumber(grade) or 0, lastSeen = tonumber(row.last_seen),
+                phone = Core.ReadPhoneScript(S.GetSourceFromIdentifier(row.citizenid), row.citizenid) or info.phone,
             }
         end
     end

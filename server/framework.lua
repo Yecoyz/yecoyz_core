@@ -103,7 +103,7 @@ function S.GetCharacter(source)
             lastname = player.get('lastName') or '',
             dob = player.get('dateofbirth'),
             sex = (sex == 'f' or sex == 1 or sex == '1') and 1 or 0,
-            phone = player.get('phoneNumber') or player.get('phone_number'),
+            phone = Core.ReadPhoneScript(source, player.identifier) or player.get('phoneNumber') or player.get('phone_number'),
             height = player.get('height'),
         }
     end
@@ -113,7 +113,7 @@ function S.GetCharacter(source)
         lastname = info.lastname or '',
         dob = info.birthdate,
         sex = tonumber(info.gender) or 0,
-        phone = info.phone,
+        phone = Core.ReadPhoneScript(source, player.PlayerData.citizenid) or info.phone,
         nationality = info.nationality,
     }
 end
@@ -130,6 +130,56 @@ function S.GetFullName(source)
     local name = (first .. ' ' .. (last or '')):gsub('%s+$', '')
     if name == '' then return GetPlayerName(source) end
     return name
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- Phone numbers. Config.Phone picks the phone script; 'auto' finds the first running one. GetCharacter().phone,
+-- GetPhoneNumber and GetJobEmployees read the number from it first and fall back to the framework's own number.
+---------------------------------------------------------------------------------------------------------------------
+local phoneSystems = { 'sd-phone' }
+
+local function phoneSystem()
+    local wanted = Config.Phone or 'auto'
+    if wanted ~= 'auto' then return wanted end
+    for _, name in ipairs(phoneSystems) do
+        if Core.IsRunning(name) then return name end
+    end
+    return 'none'
+end
+
+-- The phone script phone numbers are read from, or 'none' (the framework's number only).
+function S.GetPhoneSystem() return phoneSystem() end
+
+-- Phone scripts return strings, numbers, false or '' when there is no number.
+local function toPhoneNumber(value)
+    if type(value) == 'number' then value = value % 1 == 0 and ('%.0f'):format(value) or tostring(value) end
+    if type(value) ~= 'string' or value == '' then return nil end
+    return value
+end
+
+local phoneReaders = {
+    ['sd-phone'] = function(source, identifier)
+        local sd = exports['sd-phone']
+        -- With SIM cards (unique phones) the number belongs to the SIM in the active phone, only known while online.
+        if source and sd:isSimModeActive() then return sd:getSimNumber(source) end
+        -- Never pass ensure: that would give a number to a character that never used the phone.
+        if identifier then return sd:getPhoneNumberByIdentifier(identifier) end
+        return nil
+    end,
+}
+
+-- Internal (not exported): the phone script's number for a character, nil when there is no script or no number.
+-- source = the player's server id when online, identifier = the character identifier.
+function Core.ReadPhoneScript(source, identifier)
+    local system = phoneSystem()
+    local read = phoneReaders[system]
+    if not read then return nil end
+    local ok, value = pcall(read, tonumber(source), identifier)
+    if not ok then
+        if Config.Debug then print(('^1[yecoyz_core] %s could not read a phone number: %s^7'):format(system, tostring(value))) end
+        return nil
+    end
+    return toPhoneNumber(value)
 end
 
 ---------------------------------------------------------------------------------------------------------------------
