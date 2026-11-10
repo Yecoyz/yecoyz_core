@@ -198,6 +198,51 @@ function S.SwapJobGrades(jobName, a, b)
     return true
 end
 
+-- Renumbers the grades of a job to 0, 1, 2... without gaps (e.g. 0,1,2,3,7 becomes 0,1,2,3,4). Everyone with a moved
+-- grade, online or offline, moves along so they keep their rank. Returns true and the changes ({ [old] = new }), or
+-- false on failure.
+function S.CompactJobGrades(jobName)
+    if type(jobName) ~= 'string' then return false end
+    local job = S.GetJobData(jobName)
+    if not job then return false end
+
+    local map, any = {}, false
+    for i, g in ipairs(job.grades) do -- sorted from low to high, so a grade only ever moves down to a free number
+        if g.grade ~= i - 1 then map[g.grade] = i - 1 any = true end
+    end
+    if not any then return true, map end
+
+    local moves = {}
+    for _, e in ipairs(S.GetJobEmployees(jobName)) do moves[e.identifier] = e.grade end
+    for _, src in ipairs(S.GetPlayersByJob(jobName)) do
+        local id, pjob = S.GetIdentifier(src), S.GetJob(src)
+        if id and pjob then moves[id] = pjob.grade end
+    end
+
+    for i, g in ipairs(job.grades) do
+        local to = map[g.grade]
+        if to then
+            if ESX then
+                update('UPDATE `job_grades` SET `grade` = ? WHERE `job_name` = ? AND `grade` = ?', { to, jobName, g.grade })
+            elseif QB or qbx then
+                local entry = { label = g.label, salary = g.salary, isBoss = g.isBoss }
+                if not qbApply(jobName, to, entry) or not qbApply(jobName, g.grade, nil) then return false end
+                saveOverride(jobName, to, entry)
+                saveOverride(jobName, g.grade, nil)
+            else
+                return false
+            end
+        end
+    end
+    if ESX then ESX.RefreshJobs() end
+
+    for identifier, grade in pairs(moves) do
+        if map[grade] then S.SetJobByIdentifier(identifier, jobName, map[grade]) end
+    end
+    refreshJob(jobName)
+    return true, map
+end
+
 if (QB or qbx) and GetResourceState('oxmysql') == 'started' then
     CreateThread(function()
         db('query', [[

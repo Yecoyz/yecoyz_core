@@ -120,6 +120,7 @@ Job grades, employees, company accounts and owned vehicles. These read the frame
 | `GetDefaultJob()` | `'unemployed', 0` |
 | `GetSocietyMoney(job)` | Company account balance |
 | `AddSocietyMoney(job, amount, reason)` / `RemoveSocietyMoney(job, amount, reason)` | `RemoveSocietyMoney` only takes it when there is enough |
+| `CompactJobGrades(job)` | Renumbers the grades to 0, 1, 2... without gaps. Everyone with a moved grade, online or offline, moves along and keeps their rank. Returns `true, { [old] = new }` |
 | `SwapJobGrades(job, a, b)` | Swaps the places of two grades. Everyone with one of them, online or offline, moves along and keeps their rank |
 | `GetSocietySystem()` | The banking script in use (`Config.Society`) |
 | `GeneratePlate(prefix)` / `IsPlateTaken(plate)` | A free 8 character plate |
