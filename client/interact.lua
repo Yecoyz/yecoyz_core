@@ -22,8 +22,10 @@
 --   Core.RemoveInteraction(id)
 --   Core.SetInteractionsDisabled(true)   -- e.g. during a minigame
 --
--- The options of one spot are shown together. When several spots are in range the closest one is shown. Icons are
--- lucide names ('door-open', 'lock', 'hand'). Registrations are removed when the resource that added them stops.
+-- The options of one spot are shown together. Config.Interact.Mode 'aim' (default): every spot near you shows a dot,
+-- in reach a crosshair dot appears in the middle of the screen, and the menu opens on the spot you aim the crosshair
+-- at. 'nearest': the closest spot in reach opens by itself. Icons are lucide names ('door-open', 'lock', 'hand').
+-- Registrations are removed when the resource that added them stops.
 local C = Core.Client
 local cfg = Config.Interact or {}
 
@@ -34,6 +36,11 @@ local current            -- the spot being shown
 local shown              -- what the page has been sent: { key, sig, index, x, y }
 local selectedUid        -- the selected option, kept across rescans
 local nextScan, lastUse, targetSeq = 0, 0, 0
+local spots = {}         -- aim mode: every spot that shows a dot, by key
+
+local DOT_TXD, DOT = 'yecoyz_core_interact', 'dot'
+
+local function aimMode() return cfg.Mode ~= 'nearest' end
 
 local POOLS = { vehicle = 'CVehicle', ped = 'CPed', object = 'CObject' }
 -- Scroll up / down: the mouse wheel in every context the game has for it.
@@ -181,7 +188,6 @@ local function entityAnchor(reg, entity, from)
 end
 
 local function optionAvailable(opt, entity, dist, coords, inVehicle)
-    if opt.distance and dist > opt.distance then return false end
     if inVehicle and cfg.HideInVehicle ~= false and not opt.inVehicle then return false end
     if opt.jobs and not C.HasJob(opt.jobs) then return false end
     if opt.items and not C.HasItem(opt.items) then return false end
@@ -195,6 +201,7 @@ end
 local function scan(ped)
     local from = GetEntityCoords(ped)
     local inVehicle = IsPedInAnyVehicle(ped, false)
+    local hint = aimMode() and (cfg.HintDistance or 3.0) or 0.0 -- dots show this much further out than the reach
     local spots = {}
     local pools, pooled = {}, {}
 
@@ -207,22 +214,24 @@ local function scan(ped)
         end
     end
 
-    -- Adds the options of `reg` that apply to the spot, grouping registrations that share the same spot.
+    -- Adds the options of `reg` that apply to the spot, grouping registrations that share the same spot. A spot
+    -- further out than the reach (aim mode, up to `hint` more) is kept without options: it only shows its dot.
     local function offer(reg, entity, pos, bone)
         local dist = #(pos - from)
-        if dist > reg.distance then return end
+        if dist > reg.distance + hint then return end
 
         local key = entity
             and ('e%d:%s:%s'):format(entity, bone or '', reg.offset and ('%.2f,%.2f,%.2f'):format(reg.offset.x, reg.offset.y, reg.offset.z) or '')
             or ('c%.2f,%.2f,%.2f'):format(pos.x, pos.y, pos.z)
         local spot = spots[key]
         for _, opt in ipairs(reg.options) do
-            if optionAvailable(opt, entity, dist, pos, inVehicle) then
+            local reach = math.min(opt.distance or reg.distance, reg.distance)
+            if dist <= reach + hint and optionAvailable(opt, entity, dist, pos, inVehicle) then
                 if not spot then
                     spot = { key = key, entity = entity, bone = bone, offset = reg.offset, pos = pos, dist = dist, options = {} }
                     spots[key] = spot
                 end
-                spot.options[#spot.options + 1] = { opt = opt, reg = reg }
+                if dist <= reach then spot.options[#spot.options + 1] = { opt = opt, reg = reg } end
             end
         end
     end
@@ -281,12 +290,13 @@ local function scan(ped)
     local best
     for _, spot in pairs(spots) do
         table.sort(spot.options, function(a, b) return a.opt.uid < b.opt.uid end)
-        if not best or spot.dist < best.dist then best = spot end
+        if #spot.options > 0 and (not best or spot.dist < best.dist) then best = spot end
     end
-    if current and spots[current.key] and best and best.key ~= current.key and spots[current.key].dist - best.dist < 0.35 then
-        best = spots[current.key]
+    local shownSpot = current and spots[current.key]
+    if shownSpot and #shownSpot.options > 0 and best and best.key ~= current.key and shownSpot.dist - best.dist < 0.35 then
+        best = shownSpot
     end
-    return best
+    return spots, best
 end
 
 ---------------------------------------------------------------------------------------------------------------------
@@ -322,13 +332,17 @@ local function selectedIndex()
     return 1
 end
 
-local function anchorPosition()
-    local entity = current.entity
-    if not entity then return current.pos end
+local function spotPosition(spot)
+    local entity = spot.entity
+    if not entity then return spot.pos end
     if not DoesEntityExist(entity) then return nil end
-    if current.bone then return GetWorldPositionOfEntityBone(entity, current.bone) end
-    if current.offset then return GetOffsetFromEntityInWorldCoords(entity, current.offset.x, current.offset.y, current.offset.z) end
+    if spot.bone then return GetWorldPositionOfEntityBone(entity, spot.bone) end
+    if spot.offset then return GetOffsetFromEntityInWorldCoords(entity, spot.offset.x, spot.offset.y, spot.offset.z) end
     return GetEntityCoords(entity)
+end
+
+local function anchorPosition()
+    return spotPosition(current)
 end
 
 local function signature()
@@ -425,6 +439,7 @@ local function frame()
             scrollLabel = cfg.ScrollLabel,
             x = x,
             y = y,
+            marker = not aimMode(), -- aim mode draws its own dot on the spot
         })
         shown = { ox = false, key = current.key, sig = sig, index = index, x = x, y = y }
     elseif not ox and math.abs(x - shown.x) + math.abs(y - shown.y) > 0.0008 then
@@ -443,6 +458,76 @@ local function frame()
     end
 end
 
+local function setCurrent(spot)
+    if spot ~= current then
+        -- Same spot as before: take the new data but keep the selection.
+        if not (current and spot and spot.key == current.key) then selectedUid = nil end
+        if not spot then hide() end
+    end
+    current = spot
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- Aim mode: dots on the spots, a crosshair dot in reach, the menu on the spot the crosshair is on
+---------------------------------------------------------------------------------------------------------------------
+local dotLoaded = false
+
+local function loadDot()
+    if not dotLoaded then
+        local txd = CreateRuntimeTxd(DOT_TXD)
+        CreateRuntimeTextureFromImage(txd, DOT, 'assets/dot.png')
+        dotLoaded = true
+    end
+end
+
+-- `size` in pixels at 1080p.
+local function drawDot(x, y, size, alpha, aspect)
+    local h = size / 1080.0
+    DrawSprite(DOT_TXD, DOT, x, y, h / aspect, h, 0.0, 255, 255, 255, alpha)
+end
+
+-- Runs every frame while any spot is near: picks the spot under the crosshair and draws the dots.
+local function aimFrame()
+    local aspect = GetAspectRatio(false)
+    local best, bestDistance
+    local inReach = false
+    for key, spot in pairs(spots) do
+        spot.visible = false
+        local pos = spotPosition(spot)
+        if pos then
+            local onScreen, x, y = GetScreenCoordFromWorldCoord(pos.x, pos.y, pos.z)
+            if onScreen then
+                spot.visible, spot.x, spot.y = true, x, y
+                if #spot.options > 0 then
+                    inReach = true
+                    local dx, dy = (x - 0.5) * aspect, y - 0.5
+                    local distance = math.sqrt(dx * dx + dy * dy)
+                    -- The spot already open lets go a little later, so it does not flicker on the edge.
+                    local limit = (cfg.AimRadius or 0.035) * (current and current.key == key and 1.5 or 1.0)
+                    if distance <= limit and (not bestDistance or distance < bestDistance) then
+                        best, bestDistance = spot, distance
+                    end
+                end
+            end
+        end
+    end
+    setCurrent(best)
+
+    loadDot()
+    for _, spot in pairs(spots) do
+        if spot.visible then
+            if spot == best then
+                drawDot(spot.x, spot.y, 18.0, 255, aspect)
+            elseif #spot.options > 0 then
+                drawDot(spot.x, spot.y, 13.0, 235, aspect)
+            else
+                drawDot(spot.x, spot.y, 10.0, 170, aspect)
+            end
+        end
+    end
+    if inReach then drawDot(0.5, 0.5, 8.0, best and 255 or 210, aspect) end
+end
+
 CreateThread(function()
     if cfg.Enabled == false then return end
     local interval = cfg.ScanInterval or 200
@@ -454,21 +539,26 @@ CreateThread(function()
             local now = GetGameTimer()
             if now >= nextScan then
                 nextScan = now + interval
-                local spot = scan(ped)
-                if spot ~= current then
-                    -- Same spot as before: take the new data but keep the selection.
-                    if not (current and spot and spot.key == current.key) then selectedUid = nil end
-                    if not spot then hide() end
+                local all, best = scan(ped)
+                if aimMode() then
+                    spots = all
+                    local spot = current and all[current.key]
+                    setCurrent(spot and #spot.options > 0 and spot or nil)
+                else
+                    setCurrent(best)
                 end
-                current = spot
+            end
+            if aimMode() and next(spots) then
+                aimFrame()
+                sleep = 0
             end
             if current then
                 frame()
-                sleep = current and 0 or interval
+                if current then sleep = 0 end
             end
         else
-            current = nil
-            hide()
+            spots = {}
+            setCurrent(nil)
         end
         Wait(sleep)
     end

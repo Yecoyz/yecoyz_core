@@ -160,8 +160,9 @@ icon; `icon` takes any [lucide](https://lucide.dev/icons) name (`'bell'`) to rep
 
 ## Interactions
 
-A target system without the target key. Walk up to a prop, a door handle or a spot, and a menu appears on it. If it has
-several options, scroll the mouse wheel to switch between them and press `E` to use the selected one.
+A target system without the target key. Every spot near you shows a small dot. Once you are in reach a crosshair dot
+appears in the middle of the screen: put it on the spot's dot and the menu opens there. If it has several options,
+scroll the mouse wheel to switch between them and press `E` to use the selected one.
 
 ```lua
 local id = Core.AddInteraction({
@@ -198,9 +199,11 @@ Per option:
 | `canInteract(entity, distance, coords, name)` | Return false to hide the option |
 | `inVehicle` | Also show while the player is in a vehicle (hidden by default) |
 
-The options of one spot are shown together, and when several spots are in range the closest one is shown.
-Registrations are removed when the resource that added them stops. The key, distance and scan rate are in
-`Config.Interact`.
+The options of one spot are shown together. Registrations are removed when the resource that added them stops. The
+key, distance and scan rate are in `Config.Interact`, as are the aiming settings: `HintDistance` (how many metres
+further out than the reach the dots show) and `AimRadius` (how close the crosshair must be to a dot, as a share of the
+screen height). `Mode = 'nearest'` turns the dots and crosshair off: the menu of the closest spot in reach then opens by
+itself.
 
 `Config.Interact.UI = 'ox_lib'` shows the selected option as ox_lib's text UI (`[E] Lock door`, with `Scroll 2 / 3`
 below when there are several) instead of the menu on the spot, since ox_lib has nothing to pin to the world. Scrolling,

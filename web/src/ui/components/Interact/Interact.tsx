@@ -21,6 +21,7 @@ export function Interact({
   x,
   y,
   rows = 5,
+  marker = true,
   leaving,
 }: {
   options: InteractOption[]
@@ -30,6 +31,8 @@ export function Interact({
   x: number
   y: number
   rows?: number
+  /** false when the game draws its own marker on the spot */
+  marker?: boolean
   leaving?: boolean
 }) {
   const many = options.length > 1
@@ -42,7 +45,7 @@ export function Interact({
       className={cx('interact', x > 0.72 && 'interact-flip', leaving && 'interact-leaving')}
       style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
     >
-      <span className="interact-marker" />
+      {marker && <span className="interact-marker" />}
       <span className="interact-line" />
       <div className="interact-card">
         <ul className="interact-list">

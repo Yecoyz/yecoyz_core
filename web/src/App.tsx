@@ -71,6 +71,7 @@ interface InteractData {
   scrollLabel?: string
   x: number
   y: number
+  marker?: boolean
 }
 
 function Interaction() {
@@ -93,6 +94,7 @@ function Interaction() {
       scrollLabel={shown.scrollLabel}
       x={shown.x}
       y={shown.y}
+      marker={shown.marker !== false}
       leaving={leaving}
     />
   )

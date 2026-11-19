@@ -14,6 +14,11 @@ Config = {
     Interact = {
         Enabled = true,
         UI = 'yecoyz', -- 'yecoyz' (a menu on the spot) | 'ox_lib' (ox_lib's text UI shows the selected option)
+        -- 'aim': spots near you show a dot, in reach a crosshair dot appears and the menu opens on the spot you aim it
+        -- at. 'nearest': the menu of the closest spot in reach opens by itself (no dots).
+        Mode = 'aim',
+        HintDistance = 3.0, -- aim: dots show this many metres further out than an interaction's reach
+        AimRadius = 0.035, -- aim: how close the crosshair has to be to a dot, as a share of the screen height
         OxPosition = 'right-center', -- where ox_lib's text UI sits: 'right-center' | 'left-center' | 'top-center' | 'bottom-center'
         Key = 38, -- control that uses the selected option (38 = E). Scrolling switches between the options.
         KeyLabel = 'E', -- shown when the game can't tell which key the control is bound to

@@ -4,7 +4,7 @@ lua54 'yes'
 
 author 'Yecoyz'
 description 'Shared framework layer, callback system, notifications and interactions for the yecoyz resources'
-version '1.5.1'
+version '1.6.0'
 
 -- Resources load the API with: shared_script '@yecoyz_core/import.lua' and dependency 'yecoyz_core'.
 shared_scripts { 'config.lua', 'shared/framework.lua' }
@@ -16,4 +16,4 @@ client_scripts {
 
 ui_page 'web/dist/index.html'
 
-files { 'import.lua', 'web/dist/**/*' }
+files { 'import.lua', 'assets/dot.png', 'web/dist/**/*' }
